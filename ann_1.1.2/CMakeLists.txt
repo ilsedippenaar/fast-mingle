@@ -40,6 +40,3 @@ set(SOURCE_FILES
 add_library(ann STATIC ${SOURCE_FILES})
 
 target_include_directories (ann PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-
-add_executable(ann2fig ${SOURCE_FILES} ann2fig/ann2fig.cpp)
-add_executable(annsample ${SOURCE_FILES} sample/ann_sample.cpp)

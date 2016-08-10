@@ -3,10 +3,16 @@
 
 #include <iostream>
 #include <math.h>
+#include <stdio.h>
+
 #include <OpenGL/gl.h>
 #include <GLUT/glut.h>
-#include "ANN/ANN.h"
+
 #include "libpng-1.6.23/include/png.h"
+
+#include "EdgeBundler.h"
+#include "EdgeBundleTree.h"
+#include "Util.h"
 
 #endif //MINGLEC_MAIN_H
 

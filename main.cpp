@@ -1,46 +1,92 @@
 #include "main.h"
 
+#define FILENAME //INSERT FILE NAME HERE
+#define WIDTH 1000
+#define HEIGHT 700
+
 using namespace std;
 
-void RenderScene(void)
-{
-    glClear(GL_COLOR_BUFFER_BIT);
-    glLineWidth(20.0f);
-    glColor3f(1.0, 0.0, 0.0);
+Point offset(0, 0);
+double width;
+double height;
+
+void drawLine(const Point *p1, const Point *p2, const int weight) {
+    glLineWidth(weight);
+    glColor3f(0.5f, 0.5f, 1.0f);
     glBegin(GL_LINES);
-    glVertex3f(0.0, 0.0, 0.0);
-    glVertex3f(15, 0, 0);
+    glVertex2d((p1->x - offset.x) / width, (p1->y - offset.y) / height);
+    glVertex2d((p2->x - offset.x) / width, (p2->y - offset.y) / height);
     glEnd();
+}
+
+void testRender() {
+    glClear(GL_COLOR_BUFFER_BIT);
+    Point s = Point(0, 0);
+    Point t = Point(0, 100);
+    drawLine(&s, &t, 5);
     glFlush();
 }
 
-void SetupRC(void)
-{
-    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
+    double right = 0, top = 0, left = 0, bottom = 0;
+    FILE *fp;
+    fp = fopen(FILENAME, "r");
+    double points[4];
+    fscanf(fp, "%i", numRawEdges);
+    EdgeBundleTree::Edge *edges = (EdgeBundleTree::Edge*) malloc(*numRawEdges * sizeof(EdgeBundleTree::Edge));
+    for (int i = 0; i < *numRawEdges; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            fscanf(fp, "%lf", &points[j]);
+        }
+        if (points[0] > points[2]) {
+            double temp1 = points[0], temp2 = points[1];
+            points[0] = points[2];
+            points[1] = points[3];
+            points[2] = temp1;
+            points[3] = temp2;
+        }
+
+        left = points[0] < left ? points[0] : left;
+        right = points[2] > right ? points[2] : right;
+        bottom = points[1] < bottom ? points[1] : bottom;
+        bottom = points[3] < bottom ? points[3] : bottom;
+        top = points[1] > top ? points[1] : top;
+        top = points[3] > top ? points[3] : top;
+
+        Point *s = new Point(points[0], points[1]);
+        Point *t = new Point(points[2], points[3]);
+        // TODO: make this more memory efficient (by passing in G = (V, E))
+        edges[i] = EdgeBundleTree::Edge(s, t, &edges[i]);
+    }
+    fclose(fp);
+    width = right - left;
+    height = top - bottom;
+    offset = {width / 2 + left, height / 2 + bottom};
+    width *= 0.7;
+    height *= 0.7;
+    return edges;
 }
 
+void testBundlerRender() {
+    unsigned int numRawEdges;
+    EdgeBundleTree::Edge *edges = readEdgesFromFile(&numRawEdges);
+    const int numNeighbors = 5;
+    EdgeBundler bundler = EdgeBundler(edges, numRawEdges, numNeighbors);
+    bundler.doMingle();
+    bundler.setDrawLineFunction(drawLine);
+    glClear(GL_COLOR_BUFFER_BIT);
+    bundler.render();
+    glFlush();
+    printf("hi\n");
+}
 
 int main(int argc, char *argv[]) {
-    int	nPts;
-    ANNpointArray dataPts;
-    ANNpoint queryPt;
-    ANNidxArray	nnIdx;
-    ANNdistArray dists;
-    ANNkd_tree*	kdTree;
-
-    nPts = 100;
-    queryPt = annAllocPt(4);
-    dataPts = annAllocPts(nPts, 4);
-    nnIdx = new ANNidx[10];
-    dists = new ANNdist[10];
-
-    kdTree = new ANNkd_tree(dataPts, nPts, 4);
-
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
-    glutCreateWindow("Simple");
-    glutDisplayFunc(RenderScene);
-    SetupRC();
+    glutInitWindowSize(WIDTH, HEIGHT);
+    glutCreateWindow("fast-mingle");
+    glutDisplayFunc(testBundlerRender);
+    glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glutMainLoop();
 
     return 0;

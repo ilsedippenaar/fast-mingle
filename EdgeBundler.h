@@ -2,20 +2,27 @@
 #define MINGLEC_EDGEBUNDLER_H
 
 #include <vector>
+#include <unordered_map>
+#include "ANN/ANN.h"
 #include "EdgeBundleTree.h"
 
-// TODO: always make new edge when bundling - build binary tree (ignore coalesced)
-// TODO: don't check for ungrouped in doMingle loop - more clumping?
 
 class EdgeBundler {
     EdgeBundleTree::Edge *edges;
-    const int numEdges, numNeighbors;
-    double totalGain = 0;
+    unsigned int numEdges;
+    const int numNeighbors;
+    EdgeBundleTree *tree;
+    void (*drawLine)(const Point *, const Point *, const int);
 
 public:
-    EdgeBundler(EdgeBundleTree::Edge *edges, const int numEdges, const int numNeighbors);
-    ~EdgeBundler();
-    EdgeBundleTree* doMingle();
+    EdgeBundler(EdgeBundleTree::Edge *rawEdges, unsigned int numRawEdges, const int numNeighbors);
+    void doMingle();
+    void setDrawLineFunction(void (*drawLineFunction)(const Point *, const Point *, const int));
+    void render();
+
+private:
+    void initialize();
+    void drawEdge(EdgeBundleTree::Edge *edge);
 };
 
 #endif //MINGLEC_EDGEBUNDLER_H

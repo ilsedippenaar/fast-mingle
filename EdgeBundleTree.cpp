@@ -99,12 +99,12 @@ void EdgeBundleTree::applyBundle(EdgeBundleTree::BundleReturn& bundleReturn, Edg
     if (edge2.bundle->grouped) {
         // bundle2 should absorb bundle1
         Edge *bundle = edge2.bundle;
-        bundle->sPoint = bundleReturn.s;
-        bundle->tPoint = bundleReturn.t;
+        *bundle->sPoint = *bundleReturn.s;
+        *bundle->tPoint = *bundleReturn.t;
         bundle->S->insert(edge1.bundle->sPoint);
         bundle->T->insert(edge1.bundle->tPoint);
-        bundle->sCentroid = bundleReturn.sCentroid;
-        bundle->tCentroid = bundleReturn.tCentroid;
+        *bundle->sCentroid = *bundleReturn.sCentroid;
+        *bundle->tCentroid = *bundleReturn.tCentroid;
         bundle->children->push_back(edge1.bundle);
         bundle->weight += edge1.bundle->weight;
         bundle->ink = bundleReturn.inkUsed;

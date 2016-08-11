@@ -1,6 +1,6 @@
 #include "main.h"
 
-#define FILENAME //INSERT FILE NAME HERE
+#define FILENAME // INSERT FILE NAME HERE
 #define WIDTH 1000
 #define HEIGHT 700
 
@@ -11,7 +11,7 @@ double width;
 double height;
 
 void drawLine(const Point *p1, const Point *p2, const int weight) {
-    glLineWidth(weight);
+    glLineWidth(weight * 0.1f);
     glColor3f(0.5f, 0.5f, 1.0f);
     glBegin(GL_LINES);
     glVertex2d((p1->x - offset.x) / width, (p1->y - offset.y) / height);
@@ -70,14 +70,14 @@ EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
 void testBundlerRender() {
     unsigned int numRawEdges;
     EdgeBundleTree::Edge *edges = readEdgesFromFile(&numRawEdges);
-    const int numNeighbors = 5;
+    unsigned int preferredNumNeighbors = 20;
+    const int numNeighbors = preferredNumNeighbors > numRawEdges ? numRawEdges : preferredNumNeighbors;
     EdgeBundler bundler = EdgeBundler(edges, numRawEdges, numNeighbors);
     bundler.doMingle();
     bundler.setDrawLineFunction(drawLine);
     glClear(GL_COLOR_BUFFER_BIT);
     bundler.render();
     glFlush();
-    printf("hi\n");
 }
 
 int main(int argc, char *argv[]) {

@@ -69,7 +69,7 @@ void EdgeBundler::doMingle() {
                     EdgeBundleTree::BundleReturn& bundleReturn = bundleReturnArray[j];
                     double inkSaved = edge.bundle->ink + neighbor.bundle->ink - bundleReturn.inkUsed;
                     if (inkSaved > maxInkSaved) {
-                        maxInkSaved = bundleReturn.inkUsed;
+                        maxInkSaved = inkSaved;
                         maxSavingNeighborIndex = j;
                     }
                 }

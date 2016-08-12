@@ -25,7 +25,7 @@ struct Point {
 };
 
 
-Point lerp(Point& a, Point& b, double delta);
+Point lerp(Point &a, Point &b, double delta);
 double costFunction(std::vector<Point>& S, std::vector<Point>& T, Point& sPoint, Point& tPoint);
 
 

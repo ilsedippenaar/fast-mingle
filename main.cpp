@@ -1,6 +1,6 @@
 #include "main.h"
 
-#define FILENAME // INSERT FILE NAME HERE
+#define FILENAME "test_data/world_list.txt"
 #define WIDTH 1000
 #define HEIGHT 700
 
@@ -10,21 +10,27 @@ Point offset(0, 0);
 double width;
 double height;
 
+EdgeBundler *bundler;
+
 void drawLine(const Point *p1, const Point *p2, const int weight) {
-    glLineWidth(weight * 0.1f);
+//    glLineWidth(weight * 0.1f);
     glColor3f(0.5f, 0.5f, 1.0f);
     glBegin(GL_LINES);
-    glVertex2d((p1->x - offset.x) / width, (p1->y - offset.y) / height);
-    glVertex2d((p2->x - offset.x) / width, (p2->y - offset.y) / height);
+        glVertex2d((p1->x - offset.x) / width, (p1->y - offset.y) / height);
+        glVertex2d((p2->x - offset.x) / width, (p2->y - offset.y) / height);
     glEnd();
 }
 
-void testRender() {
+void drawBezier(const EdgeBundler::ControlPoints *controlPoints) {
     glClear(GL_COLOR_BUFFER_BIT);
-    Point s = Point(0, 0);
-    Point t = Point(0, 100);
-    drawLine(&s, &t, 5);
-    glFlush();
+    glColor3f(0.5f, 0.5f, 1.0f);
+    glMap1d(GL_MAP1_VERTEX_3, 0.0, 1.0, 3, 4, (GLdouble*) controlPoints);
+    glEnable(GL_MAP1_VERTEX_3);
+    glBegin(GL_LINE_STRIP);
+    for (int i = 0; i <= 30; i++) {
+        glEvalCoord1d((GLdouble) i / 30);
+    }
+    glEnd();
 }
 
 EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
@@ -67,16 +73,19 @@ EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
     return edges;
 }
 
-void testBundlerRender() {
+void init() {
     unsigned int numRawEdges;
     EdgeBundleTree::Edge *edges = readEdgesFromFile(&numRawEdges);
-    unsigned int preferredNumNeighbors = 20;
-    const int numNeighbors = preferredNumNeighbors > numRawEdges ? numRawEdges : preferredNumNeighbors;
-    EdgeBundler bundler = EdgeBundler(edges, numRawEdges, numNeighbors);
-    bundler.doMingle();
-    bundler.setDrawLineFunction(drawLine);
+    unsigned int maxNeighbors = 20;
+    const unsigned int numNeighbors = numRawEdges < maxNeighbors ? numRawEdges : maxNeighbors;
+    bundler = new EdgeBundler(edges, numRawEdges, numNeighbors);
+    bundler->doMingle();
+    bundler->setDrawLineFunction(drawLine);
+}
+
+void renderBundler() {
     glClear(GL_COLOR_BUFFER_BIT);
-    bundler.render();
+    bundler->renderLines();
     glFlush();
 }
 
@@ -84,8 +93,9 @@ int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowSize(WIDTH, HEIGHT);
+    init();
     glutCreateWindow("fast-mingle");
-    glutDisplayFunc(testBundlerRender);
+    glutDisplayFunc(renderBundler);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
     glutMainLoop();
 

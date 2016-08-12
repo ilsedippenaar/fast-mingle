@@ -1,7 +1,7 @@
 #include "Util.h"
 
 Point lerp(Point& a, Point& b, double delta) {
-    return {a.x * (1 - delta) + b.x * delta, a.y * (1 - delta) + b.y * delta};
+    return {(b.x - a.x) * delta + a.x, (b.y - a.y) * delta + a.y};
 }
 
 double costFunction(std::vector<Point>& S, std::vector<Point>& T, Point& sPoint, Point& tPoint) {

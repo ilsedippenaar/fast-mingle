@@ -19,22 +19,29 @@ EdgeBundleTree::Edge::Edge(Point *s, Point *t, Edge *bundle) {
     id = edgeId++;
 }
 
-EdgeBundleTree::Edge::Edge(Point *s, Point *t, Point *sCentroid, Point *tCentroid, Edge **children, double inkValue) {
-    assert(s->x < t->x);
-    sPoint = s;
-    tPoint = t;
-    this->sCentroid = sCentroid;
-    this->tCentroid = tCentroid;
+EdgeBundleTree::Edge::Edge(Edge *child1, Edge *child2, BundleReturn *data) {
+    assert(data->s->x <= data->t->x);
+    Point *points = (Point*) malloc(sizeof(Point) * 4);
+    points[0] = *data->s;
+    points[1] = *data->t;
+    points[2] = *data->sCentroid;
+    points[3] = *data->tCentroid;
+    sPoint = &points[0];
+    tPoint = &points[1];
+    sCentroid = &points[2];
+    tCentroid = &points[3];
     bundle = this;
-    S->insert(children[0]->sPoint);
-    S->insert(children[1]->sPoint);
-    T->insert(children[0]->tPoint);
-    T->insert(children[1]->tPoint);
+    S->insert(child1->sPoint);
+    S->insert(child2->sPoint);
+    T->insert(child1->tPoint);
+    T->insert(child2->tPoint);
 
-    this->children = new std::vector<Edge*>(children, children + 2);
+    children = new std::vector<Edge*>();
+    children->push_back(child1);
+    children->push_back(child2);
     neighbors = nullptr;
-    ink = inkValue;
-    weight = children[0]->weight + children[1]->weight;
+    ink = data->inkUsed;
+    weight = child1->weight + child2->weight;
     grouped = true;
     id = edgeId++;
 }
@@ -54,20 +61,19 @@ void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge
     u = u / u.norm();
     double dist, distSum = 0, maxDist = 0;
     int k = 0;
-    //TODO: allocate these on the stack
-    std::unordered_set<Point*> *combinedS = new std::unordered_set<Point*>(), *combinedT = new std::unordered_set<Point*>();
-    combinedS->insert(bundle1.S->begin(), bundle1.S->end());
-    combinedS->insert(bundle2.S->begin(), bundle2.S->end());
-    combinedT->insert(bundle1.T->begin(), bundle1.T->end());
-    combinedT->insert(bundle2.T->begin(), bundle2.T->end());
-    for (auto point_ptr : *combinedS) {
+    std::unordered_set<Point*> combinedS, combinedT;
+    combinedS.insert(bundle1.S->begin(), bundle1.S->end());
+    combinedS.insert(bundle2.S->begin(), bundle2.S->end());
+    combinedT.insert(bundle1.T->begin(), bundle1.T->end());
+    combinedT.insert(bundle2.T->begin(), bundle2.T->end());
+    for (auto point_ptr : combinedS) {
         Point v = *point_ptr - sCentroid;
         dist = u * v;
         maxDist = maxDist < dist ? dist : maxDist;
         distSum += dist;
         k += 1;
     }
-    for (auto point_ptr : *combinedT) {
+    for (auto point_ptr : combinedT) {
         Point v = *point_ptr - tCentroid;
         dist = -(u * v);
         maxDist = maxDist < dist ? dist : maxDist;
@@ -83,11 +89,11 @@ void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge
     Point& tPoint = *bundleReturn->t;
     delta = tPoint - sPoint;
     double inkValueCombined = delta.norm();
-    for (auto point_ptr : *combinedS) {
+    for (auto point_ptr : combinedS) {
         delta = *point_ptr - sPoint;
         inkValueCombined += delta.norm();
     }
-    for (auto point_ptr : *combinedT) {
+    for (auto point_ptr : combinedT) {
         delta = *point_ptr - tPoint;
         inkValueCombined += delta.norm();
     }
@@ -110,15 +116,9 @@ void EdgeBundleTree::applyBundle(EdgeBundleTree::BundleReturn& bundleReturn, Edg
         bundle->ink = bundleReturn.inkUsed;
         setBundle(edge1, bundle);
     } else {
-        Point *sPoint = new Point(bundleReturn.s->x, bundleReturn.s->y);
-        Point *tPoint = new Point(bundleReturn.t->x, bundleReturn.t->y);
-        Point *sCentroid = new Point(bundleReturn.sCentroid->x, bundleReturn.sCentroid->y);
-        Point *tCentroid = new Point(bundleReturn.tCentroid->x, bundleReturn.tCentroid->y);
-        Edge **children = new Edge*[2] {&edge1, &edge2};
-        Edge *newBundle = new Edge(sPoint, tPoint, sCentroid, tCentroid, children, bundleReturn.inkUsed);
+        Edge *newBundle = new Edge(&edge1, &edge2, &bundleReturn);
         setBundle(*newBundle, newBundle);
     }
-
 }
 
 void EdgeBundleTree::setBundle(EdgeBundleTree::Edge& edge, EdgeBundleTree::Edge *bundle) {

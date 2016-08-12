@@ -10,6 +10,11 @@
 class EdgeBundleTree {
 
 public:
+    struct BundleReturn {
+        Point *s, *t, *sCentroid, *tCentroid;
+        double inkUsed;
+    };
+
     struct Edge {
         std::unordered_set<Point*> *S = new std::unordered_set<Point*>(), *T = new std::unordered_set<Point*>();
         Point *sPoint, *tPoint;
@@ -23,12 +28,7 @@ public:
         int id;
 
         Edge(Point *s, Point *t, Edge *bundle);  // for leaf nodes
-        Edge(Point *s, Point *t, Point *sCentroid, Point *tCentroid, Edge **children, double inkValue);  // for parent nodes
-    };
-
-    struct BundleReturn {
-        Point *s, *t, *sCentroid, *tCentroid;
-        double inkUsed;
+        Edge(Edge *child1, Edge *child2, BundleReturn *data);  // for parent nodes
     };
 
     Edge *edges;

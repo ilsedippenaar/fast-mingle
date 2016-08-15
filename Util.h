@@ -10,7 +10,6 @@ static const int UNGROUPED = -1;
 
 struct Point {
     double x, y;
-    Point(double x, double y) : x(x), y(y) {}
 
     Point operator+ (Point& p);
     Point operator- (Point& p);
@@ -25,7 +24,7 @@ struct Point {
 };
 
 
-Point lerp(Point &a, Point &b, double delta);
+Point lerp(const Point &a, const Point &b, const double delta);
 double costFunction(std::vector<Point>& S, std::vector<Point>& T, Point& sPoint, Point& tPoint);
 
 

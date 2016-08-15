@@ -11,7 +11,7 @@ class EdgeBundleTree {
 
 public:
     struct BundleReturn {
-        Point *s, *t, *sCentroid, *tCentroid;
+        Point s, t, sCentroid, tCentroid;
         double inkUsed;
     };
 
@@ -28,7 +28,7 @@ public:
         int id;
 
         Edge(Point *s, Point *t, Edge *bundle);  // for leaf nodes
-        Edge(Edge *child1, Edge *child2, BundleReturn *data);  // for parent nodes
+        Edge(Edge *child1, Edge *child2, const BundleReturn *data);  // for parent nodes
     };
 
     Edge *edges;
@@ -37,8 +37,8 @@ public:
     EdgeBundleTree(Edge *edges, unsigned int numEdges);
 
     static double getInkValueFromPoints(Edge& edge0, Edge& edge1, Point& sPoint, Point& tPoint);
-    static void testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge &bundle1, Edge &bundle2);
-    static void applyBundle(BundleReturn& bundleReturn, Edge& edge1, Edge& edge2);
+    static void testBundle(EdgeBundleTree::BundleReturn *bundleReturn, const Edge &bundle1, const Edge &bundle2);
+    static void applyBundle(const BundleReturn& bundleReturn, Edge& edge1, Edge& edge2);
     void coalesceTree();
 
 private:

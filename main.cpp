@@ -1,12 +1,12 @@
 #include "main.h"
 
-#define FILENAME "test_data/world_list.txt"
+#define FILENAME "test_data/testcrossed_list.txt"
 #define WIDTH 1000
 #define HEIGHT 700
 
 using namespace std;
 
-Point offset(0, 0);
+Point offset = {0, 0};
 double width;
 double height;
 
@@ -21,11 +21,16 @@ void drawLine(const Point *p1, const Point *p2, const int weight) {
     glEnd();
 }
 
-void drawBezier(const EdgeBundler::ControlPoints *controlPoints) {
+void drawBezier(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight) {
+    GLdouble controlPoints[4][3] = {{(start->x - offset.x) / width, (start->y - offset.y) / height, 0},
+                                   {(ctrl1->x - offset.x) / width, (ctrl1->y - offset.y) / height, 0},
+                                   {(ctrl2->x - offset.x) / width, (ctrl2->y - offset.y) / height, 0},
+                                   {(end->x - offset.x) / width, (end->y - offset.y) / height, 0}};
     glClear(GL_COLOR_BUFFER_BIT);
     glColor3f(0.5f, 0.5f, 1.0f);
-    glMap1d(GL_MAP1_VERTEX_3, 0.0, 1.0, 3, 4, (GLdouble*) controlPoints);
+    glMap1d(GL_MAP1_VERTEX_3, 0.0, 1.0, 3, 4, &controlPoints[0][0]);
     glEnable(GL_MAP1_VERTEX_3);
+    glLineWidth(weight * 0.1f);
     glBegin(GL_LINE_STRIP);
     for (int i = 0; i <= 30; i++) {
         glEvalCoord1d((GLdouble) i / 30);
@@ -39,7 +44,8 @@ EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
     fp = fopen(FILENAME, "r");
     double points[4];
     fscanf(fp, "%i", numRawEdges);
-    EdgeBundleTree::Edge *edges = (EdgeBundleTree::Edge*) malloc(*numRawEdges * sizeof(EdgeBundleTree::Edge));
+    EdgeBundleTree::Edge *edges = (EdgeBundleTree::Edge*) malloc(sizeof(EdgeBundleTree::Edge) * *numRawEdges);
+    Point *newPoints = (Point*) malloc(sizeof(Point) * *numRawEdges * 2);
     for (int i = 0; i < *numRawEdges; ++i) {
         for (int j = 0; j < 4; ++j) {
             fscanf(fp, "%lf", &points[j]);
@@ -59,8 +65,10 @@ EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
         top = points[1] > top ? points[1] : top;
         top = points[3] > top ? points[3] : top;
 
-        Point *s = new Point(points[0], points[1]);
-        Point *t = new Point(points[2], points[3]);
+        newPoints[2*i] = {points[0], points[1]};
+        newPoints[2*i + 1] = {points[2], points[3]};
+        Point *s = &newPoints[2*i];
+        Point *t = &newPoints[2*i + 1];
         // TODO: make this more memory efficient (by passing in G = (V, E))
         edges[i] = EdgeBundleTree::Edge(s, t, &edges[i]);
     }
@@ -81,22 +89,40 @@ void init() {
     bundler = new EdgeBundler(edges, numRawEdges, numNeighbors);
     bundler->doMingle();
     bundler->setDrawLineFunction(drawLine);
+    bundler->setDrawBezierFunction(drawBezier);
+}
+
+void reshape(int w, int h) {
+    glViewport(0, 0, (GLsizei) w, (GLsizei) h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    if (w <= h)
+        glOrtho(-1.0, 1.0, -1.0*(GLfloat)h/(GLfloat)w,
+                1.0*(GLfloat)h/(GLfloat)w, -1.0, 1.0);
+    else
+        glOrtho(-1.0*(GLfloat)w/(GLfloat)h,
+                1.0*(GLfloat)w/(GLfloat)h, -1.0, 1.0, -1.0, 1.0);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 }
 
 void renderBundler() {
     glClear(GL_COLOR_BUFFER_BIT);
-    bundler->renderLines();
+    bundler->renderBezier();
     glFlush();
 }
 
 int main(int argc, char *argv[]) {
+    init();
+
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowSize(WIDTH, HEIGHT);
-    init();
     glutCreateWindow("fast-mingle");
     glutDisplayFunc(renderBundler);
+    glutReshapeFunc(reshape);
     glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    glShadeModel(GL_FLAT);
     glutMainLoop();
 
     return 0;

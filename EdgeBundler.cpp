@@ -49,13 +49,6 @@ void EdgeBundler::initialize() {
 void EdgeBundler::doMingle() {
     bool inkWasSaved;
     EdgeBundleTree::BundleReturn bundleReturnArray[numNeighbors];
-    Point *points = (Point*) malloc(sizeof(Point) * numNeighbors * 4);
-    for (int i = 0; i < numNeighbors; ++i) {
-        bundleReturnArray[i].s = &points[i*4];
-        bundleReturnArray[i].t = &points[i*4 + 1];
-        bundleReturnArray[i].sCentroid = &points[i*4 + 2];
-        bundleReturnArray[i].tCentroid = &points[i*4 + 3];
-    }
     do {
         inkWasSaved = false;
         for (unsigned long i = 0; i < tree->numEdges; ++i) {
@@ -88,25 +81,16 @@ void EdgeBundler::doMingle() {
 
 
 
+void EdgeBundler::makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge *> *map) {
+    for (int i = 0; i < numEdges; ++i) {
+        (*map)[edges[i].bundle->id] = edges[i].bundle;
+    }
+}
+
+
 
 void EdgeBundler::setDrawLineFunction(void (*drawLineFunction)(const Point *, const Point *, const int)) {
     drawLine = drawLineFunction;
-}
-
-void EdgeBundler::setDrawBezierFunction(void (*drawBezierFunction)(const ControlPoints *)) {
-    drawBezier = drawBezierFunction;
-}
-
-void EdgeBundler::renderLines() {
-    auto topEdgeSet = new std::unordered_map<int, EdgeBundleTree::Edge*>();
-    for (int i = 0; i < numEdges; ++i) {
-        (*topEdgeSet)[edges[i].bundle->id] = edges[i].bundle;
-    }
-    for (auto pair : *topEdgeSet) {
-        EdgeBundleTree::Edge *bundle = pair.second;
-        drawEdgeLines(bundle);
-        drawLine(bundle->sPoint, bundle->tPoint, bundle->weight);
-    }
 }
 
 void EdgeBundler::drawEdgeLines(EdgeBundleTree::Edge *edge) {
@@ -118,6 +102,53 @@ void EdgeBundler::drawEdgeLines(EdgeBundleTree::Edge *edge) {
     }
 }
 
-void EdgeBundler::renderBezier() {
+void EdgeBundler::renderLines() {
+    auto topEdgeMap = new std::unordered_map<int, EdgeBundleTree::Edge*>();
+    makeTopEdgesMap(topEdgeMap);
+    for (auto pair : *topEdgeMap) {
+        EdgeBundleTree::Edge *bundle = pair.second;
+        drawEdgeLines(bundle);
+        drawLine(bundle->sPoint, bundle->tPoint, bundle->weight);
+    }
+    delete topEdgeMap;
+}
 
+
+
+void EdgeBundler::setDrawBezierFunction(void (*drawBezierFunction)(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight)) {
+    drawBezier = drawBezierFunction;
+}
+
+void EdgeBundler::drawEdgeBeziers(const EdgeBundleTree::Edge *edge, const Point *sPointTo, const Point *tPointTo) {
+    if (!edge->children) return;
+    for (EdgeBundleTree::Edge *child : *edge->children) {
+        const Point sChildPointTo = lerp(*child->sPoint, *edge->sPoint, curviness);
+        const Point tChildPointTo = lerp(*child->tPoint, *edge->tPoint, curviness);
+        drawEdgeBeziers(child, &sChildPointTo, &tChildPointTo);
+        Point sPointFrom, tPointFrom;
+        if (!child->children) {
+            sPointFrom = *child->sPoint;
+            tPointFrom = *child->tPoint;
+        } else {
+            sPointFrom = lerp(*child->sPoint, *edge->sPoint, 1 - curviness);
+            tPointFrom = lerp(*child->tPoint, *edge->tPoint, 1 - curviness);
+            drawLine(&sChildPointTo, &sPointFrom, child->weight);
+            drawLine(&tChildPointTo, &tPointFrom, child->weight);
+        }
+        drawBezier(&sPointFrom, edge->sPoint, edge->sPoint, sPointTo, child->weight);
+        drawBezier(&tPointFrom, edge->tPoint, edge->tPoint, tPointTo, child->weight);
+    }
+}
+
+void EdgeBundler::renderBezier() {
+    auto topEdgeMap = new std::unordered_map<int, EdgeBundleTree::Edge*>();
+    makeTopEdgesMap(topEdgeMap);
+    for (auto pair : *topEdgeMap) {
+        EdgeBundleTree::Edge *bundle = pair.second;
+        const Point sPointCurve = lerp(*bundle->sPoint, *bundle->tPoint, curviness);
+        const Point tPointCurve = lerp(*bundle->sPoint, *bundle->tPoint, 1 - curviness);
+        drawEdgeBeziers(bundle, &sPointCurve, &tPointCurve);
+        drawLine(&sPointCurve, &tPointCurve, bundle->weight);
+    }
+    delete topEdgeMap;
 }

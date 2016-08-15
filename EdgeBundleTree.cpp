@@ -19,13 +19,13 @@ EdgeBundleTree::Edge::Edge(Point *s, Point *t, Edge *bundle) {
     id = edgeId++;
 }
 
-EdgeBundleTree::Edge::Edge(Edge *child1, Edge *child2, BundleReturn *data) {
-    assert(data->s->x <= data->t->x);
+EdgeBundleTree::Edge::Edge(Edge *child1, Edge *child2, const BundleReturn *data) {
+    assert(data->s.x <= data->t.x);
     Point *points = (Point*) malloc(sizeof(Point) * 4);
-    points[0] = *data->s;
-    points[1] = *data->t;
-    points[2] = *data->sCentroid;
-    points[3] = *data->tCentroid;
+    points[0] = data->s;
+    points[1] = data->t;
+    points[2] = data->sCentroid;
+    points[3] = data->tCentroid;
     sPoint = &points[0];
     tPoint = &points[1];
     sCentroid = &points[2];
@@ -49,14 +49,14 @@ EdgeBundleTree::Edge::Edge(Edge *child1, Edge *child2, BundleReturn *data) {
 EdgeBundleTree::EdgeBundleTree(EdgeBundleTree::Edge *edges, unsigned int numEdges)
         : edges(edges), numEdges(numEdges) {}
 
-void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge& bundle1, Edge& bundle2) {
+void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, const Edge& bundle1, const Edge& bundle2) {
     int combinedWeight = bundle1.weight + bundle2.weight;
-    *bundleReturn->sCentroid = {(bundle1.sCentroid->x * bundle1.weight + bundle2.sCentroid->x * bundle2.weight) / combinedWeight,
+    bundleReturn->sCentroid = {(bundle1.sCentroid->x * bundle1.weight + bundle2.sCentroid->x * bundle2.weight) / combinedWeight,
                        (bundle1.sCentroid->y * bundle1.weight + bundle2.sCentroid->y * bundle2.weight) / combinedWeight};
-    *bundleReturn->tCentroid = {(bundle1.tCentroid->x * bundle1.weight + bundle2.tCentroid->x * bundle2.weight) / combinedWeight,
+    bundleReturn->tCentroid = {(bundle1.tCentroid->x * bundle1.weight + bundle2.tCentroid->x * bundle2.weight) / combinedWeight,
                        (bundle1.tCentroid->y * bundle1.weight + bundle2.tCentroid->y * bundle2.weight) / combinedWeight};
-    Point& sCentroid = *bundleReturn->sCentroid;
-    Point& tCentroid = *bundleReturn->tCentroid;
+    Point& sCentroid = bundleReturn->sCentroid;
+    Point& tCentroid = bundleReturn->tCentroid;
     Point u = tCentroid - sCentroid;
     u = u / u.norm();
     double dist, distSum = 0, maxDist = 0;
@@ -83,10 +83,10 @@ void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge
     Point delta = tCentroid - sCentroid;
     double d = delta.norm();
     double x = ((distSum + 2 * d) / (k + 4) / d);
-    *bundleReturn->s = lerp(sCentroid, tCentroid, x);
-    *bundleReturn->t = lerp(sCentroid, tCentroid, 1 - x);
-    Point& sPoint = *bundleReturn->s;
-    Point& tPoint = *bundleReturn->t;
+    bundleReturn->s = lerp(sCentroid, tCentroid, x);
+    bundleReturn->t = lerp(sCentroid, tCentroid, 1 - x);
+    Point& sPoint = bundleReturn->s;
+    Point& tPoint = bundleReturn->t;
     delta = tPoint - sPoint;
     double inkValueCombined = delta.norm();
     for (auto point_ptr : combinedS) {
@@ -100,17 +100,17 @@ void EdgeBundleTree::testBundle(EdgeBundleTree::BundleReturn *bundleReturn, Edge
     bundleReturn->inkUsed = inkValueCombined;
 }
 
-void EdgeBundleTree::applyBundle(EdgeBundleTree::BundleReturn& bundleReturn, EdgeBundleTree::Edge& edge1,
+void EdgeBundleTree::applyBundle(const EdgeBundleTree::BundleReturn& bundleReturn, EdgeBundleTree::Edge& edge1,
                                  EdgeBundleTree::Edge& edge2) {
     if (edge2.bundle->grouped) {
         // bundle2 should absorb bundle1
         Edge *bundle = edge2.bundle;
-        *bundle->sPoint = *bundleReturn.s;
-        *bundle->tPoint = *bundleReturn.t;
+        *bundle->sPoint = bundleReturn.s;
+        *bundle->tPoint = bundleReturn.t;
         bundle->S->insert(edge1.bundle->sPoint);
         bundle->T->insert(edge1.bundle->tPoint);
-        *bundle->sCentroid = *bundleReturn.sCentroid;
-        *bundle->tCentroid = *bundleReturn.tCentroid;
+        *bundle->sCentroid = bundleReturn.sCentroid;
+        *bundle->tCentroid = bundleReturn.tCentroid;
         bundle->children->push_back(edge1.bundle);
         bundle->weight += edge1.bundle->weight;
         bundle->ink = bundleReturn.inkUsed;
@@ -130,6 +130,7 @@ void EdgeBundleTree::setBundle(EdgeBundleTree::Edge& edge, EdgeBundleTree::Edge 
 }
 
 void EdgeBundleTree::coalesceTree() {
+    // TODO: make a top edges set so that testing bundles can be faster (i.e., loop through top bundles, not inidivudal edges)
     for (int i = 0; i < numEdges; ++i) {
         Edge& edge = edges[i];
         edge.grouped = false;

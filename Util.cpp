@@ -1,6 +1,6 @@
 #include "Util.h"
 
-Point lerp(Point& a, Point& b, double delta) {
+Point lerp(const Point& a, const Point& b, const double delta) {
     return {(b.x - a.x) * delta + a.x, (b.y - a.y) * delta + a.y};
 }
 

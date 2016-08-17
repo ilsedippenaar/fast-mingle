@@ -11,9 +11,9 @@ double width;
 double height;
 
 void drawLine(const Point *p1, const Point *p2, const int weight) {
-    int w= (int)sqrt(weight) / 10;
+    int w= (int)sqrt(weight) / 2;
     if (w < 1) w = 1;
-    float alpha = weight / 1000.0f;
+    float alpha = weight / 5.0f;
     if (alpha > 1.0) alpha = 1.0f;
     glLineWidth(w);
     glColor4f(0.5f, 0.5f, 1.0f, alpha);

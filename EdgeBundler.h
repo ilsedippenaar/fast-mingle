@@ -15,7 +15,6 @@ public:
     Point center;
 
     EdgeBundler(const char *edgeFilename, unsigned int numNeighbors=10, float curviness=0.5f);
-    EdgeBundler(const char *pointFilename, const char *adjacencyFilename, unsigned int numNeighbors=10, float curviness=0.5f);
     void doMingle();
     void setDrawLineFunction(void (*drawLineFunction)(const Point *, const Point *, const int));
     void setDrawBezierFunction(void (*drawBezierFunction)(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight));
@@ -32,7 +31,6 @@ private:
     void (*drawBezier)(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight);
 
     void readEdgesFromFile(const char *edgeFilename);
-    void makeEdgesFromFiles(const char *pointFilename, const char *adjacencyFilename);
     void assignNeighbors();
     void makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge*> *map);
     void drawEdgeLines(EdgeBundleTree::Edge *edge);

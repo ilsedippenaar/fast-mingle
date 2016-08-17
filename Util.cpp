@@ -26,3 +26,9 @@ Point Point::operator*(int k) { return {k * x, k * y}; }
 double Point::operator*(Point& p) { return x * p.x + y * p.y; }
 
 Point Point::operator/(double k) { return {x/k, y/k}; }
+
+bool Point::operator==(const Point &other) const { return x == other.x && y == other.y; }
+
+std::size_t PointHasher::operator()(const Point &p) const {
+    return std::hash<double>()(p.x) ^ (std::hash<double>()(p.y) << 1);
+}

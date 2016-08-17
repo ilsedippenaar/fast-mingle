@@ -4,12 +4,10 @@ using namespace std;
 
 EdgeBundler *bundler;
 
-const int WIDTH = 10000;
-const int HEIGHT = 7000;
+const int WIDTH = 2000;
+const int HEIGHT = 1000;
 const double ZOOM_CONST = 1.9;
-const char *FILENAME = "test_data/world_list.txt";
-const char *POINT_FILENAME = "test_data/vertices.tsv";
-const char *ADJ_FILENAME = "test_data/edges.tsv";
+const char *FILENAME = "test_data/edges.txt";
 
 void drawLine(const Point *p1, const Point *p2, const int weight) {
 //    glLineWidth(weight);
@@ -37,9 +35,10 @@ void drawBezier(const Point *start, const Point *ctrl1, const Point *ctrl2, cons
 }
 
 void init() {
-//    bundler = new EdgeBundler(FILENAME, 20, 0.9f);
-    bundler = new EdgeBundler(POINT_FILENAME, ADJ_FILENAME);
+    bundler = new EdgeBundler(FILENAME, 10, 0.8f);
+    printf("Created Edge Bundler\n");
     bundler->doMingle();
+    printf("Finished mingling");
     bundler->setDrawLineFunction(drawLine);
     bundler->setDrawBezierFunction(drawBezier);
 }

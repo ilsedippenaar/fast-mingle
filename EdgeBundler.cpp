@@ -2,13 +2,9 @@
 
 EdgeBundler::EdgeBundler(const char *edgeFilename, unsigned int numNeighbors, float curviness)
         : numNeighbors(numNeighbors), curviness(curviness / 2.0f) {
+    printf("Reading edges from file\n");
     readEdgesFromFile(edgeFilename);
-    assignNeighbors();
-}
-
-EdgeBundler::EdgeBundler(const char *pointFilename, const char *adjacencyFilename, unsigned int numNeighbors, float curviness)
-        : numNeighbors(numNeighbors), curviness(curviness / 2.0f) {
-    makeEdgesFromFiles(pointFilename, adjacencyFilename);
+    printf("Doing KNN\n");
     assignNeighbors();
 }
 
@@ -16,94 +12,54 @@ void EdgeBundler::readEdgesFromFile(const char *edgeFilename) {
     double right = 0, top = 0, left = 0, bottom = 0;
     FILE *fp;
     fp = fopen(edgeFilename, "r");
-    double points[4];
     fscanf(fp, "%i", &numEdges);
     numNeighbors = numEdges < numNeighbors ? numEdges : numNeighbors;
     edges = (EdgeBundleTree::Edge*) malloc(sizeof(EdgeBundleTree::Edge) * numEdges);
-    Point *newPoints = (Point*) malloc(sizeof(Point) * numEdges * 2);
+    std::unordered_map<Point, unsigned int, PointHasher> pointMap;
+    Point p1, p2;
+    unsigned int idx = 0;
     for (int i = 0; i < numEdges; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            fscanf(fp, "%lf", &points[j]);
-        }
-        if (points[0] > points[2]) {
-            double temp1 = points[0], temp2 = points[1];
-            points[0] = points[2];
-            points[1] = points[3];
-            points[2] = temp1;
-            points[3] = temp2;
+        fscanf(fp, "%lf", &p1.x);
+        fscanf(fp, "%lf", &p1.y);
+        fscanf(fp, "%lf", &p2.x);
+        fscanf(fp, "%lf", &p2.y);
+        if (pointMap.find(p1) == pointMap.end()) pointMap[p1] = idx++;
+        if (pointMap.find(p2) == pointMap.end()) pointMap[p2] = idx++;
+    }
+
+    fseek(fp, 0, SEEK_SET);
+    fscanf(fp, "%i", &numEdges);
+    Point *newPoints = (Point*) malloc(sizeof(Point) * idx);
+    for (int i = 0; i < numEdges; ++i) {
+        fscanf(fp, "%lf", &p1.x);
+        fscanf(fp, "%lf", &p1.y);
+        fscanf(fp, "%lf", &p2.x);
+        fscanf(fp, "%lf", &p2.y);
+        if (p1.x > p2.x) {
+            Point temp = p1;
+            p1 = p2;
+            p2 = temp;
         }
 
-        left = points[0] < left ? points[0] : left;
-        right = points[2] > right ? points[2] : right;
-        bottom = points[1] < bottom ? points[1] : bottom;
-        bottom = points[3] < bottom ? points[3] : bottom;
-        top = points[1] > top ? points[1] : top;
-        top = points[3] > top ? points[3] : top;
+        left = p1.x < left ? p1.x : left;
+        right = p2.x > right ? p2.x : right;
+        bottom = p1.y < bottom ? p1.y : bottom;
+        bottom = p2.y < bottom ? p2.y : bottom;
+        top = p1.y > top ? p1.y : top;
+        top = p2.y > top ? p2.y : top;
 
-        newPoints[2*i] = {points[0], points[1]};
-        newPoints[2*i + 1] = {points[2], points[3]};
-        Point *s = &newPoints[2*i];
-        Point *t = &newPoints[2*i + 1];
+        unsigned int idx1 = pointMap[p1];
+        unsigned int idx2 = pointMap[p2];
+        newPoints[idx1] = p1;
+        newPoints[idx2] = p2;
+        Point *s = &newPoints[idx1];
+        Point *t = &newPoints[idx2];
         edges[i] = EdgeBundleTree::Edge(s, t, &edges[i]);
     }
     fclose(fp);
     width = right - left;
     height = top - bottom;
     center = {width / 2 + left, height / 2 + bottom};
-}
-
-void EdgeBundler::makeEdgesFromFiles(const char *pointFilename, const char *adjacencyFilename) {
-    double x, y, right = 0, top = 0, left = 0, bottom = 0;
-    FILE *fp;
-    fp = fopen(pointFilename, "r");
-    unsigned int numVertices;
-    fscanf(fp, "%i", &numVertices);
-    Point *points = (Point*) malloc(sizeof(Point) * numVertices);
-    for (int i = 0; i < numVertices; ++i) {
-        fscanf(fp, "%lf", &x);
-        fscanf(fp, "%lf", &y);
-
-        left = x < left ? x : left;
-        right = x > right ? x : right;
-        bottom = y < bottom ? y : bottom;
-        top = y > top ? y : top;
-
-        points[i].x = x, points[i].y = y;
-    }
-    fclose(fp);
-    width = right - left;
-    height = top - bottom;
-    center = {width / 2 + left, height / 2 + bottom};
-
-    fp = fopen(adjacencyFilename, "r");
-    fscanf(fp, "%i", &numEdges);
-    fseek(fp, 1, SEEK_CUR);
-    edges = (EdgeBundleTree::Edge*) malloc(sizeof(EdgeBundleTree::Edge) * numEdges);
-    int c, edgeIdx = 0, idx = 0, adjIdx, debug = 0;
-    do {
-        c = fgetc(fp);
-        if (c == '\n') idx++;
-        else if (c != '\t' && c != EOF) {
-            fseek(fp, -1, SEEK_CUR);
-            fscanf(fp, "%i", &adjIdx);
-            debug++;
-            if (idx < adjIdx) {
-                Point *s, *t;
-                if (points[idx].x < points[adjIdx].x) {
-                    s = &points[idx];
-                    t = &points[adjIdx];
-                } else {
-                    s = &points[adjIdx];
-                    t = &points[idx];
-                }
-                edges[edgeIdx] = EdgeBundleTree::Edge(s, t, &edges[edgeIdx]);
-                edgeIdx++;
-            }
-        }
-    } while (c != EOF);
-    fclose(fp);
-    printf("%i\t%i\t%i\n", edgeIdx, numEdges, debug);
-    assert(edgeIdx == numEdges);
 }
 
 void EdgeBundler::assignNeighbors() {
@@ -150,8 +106,10 @@ void EdgeBundler::assignNeighbors() {
 void EdgeBundler::doMingle() {
     bool inkWasSaved;
     EdgeBundleTree::BundleReturn bundleReturnArray[numNeighbors];
+    int iter = 1;
     do {
         inkWasSaved = false;
+        printf("Iter: %d\t", iter++);
         for (unsigned long i = 0; i < tree->numEdges; ++i) {
             EdgeBundleTree::Edge& edge = tree->edges[i];
             if (!edge.bundle->grouped) {
@@ -204,14 +162,13 @@ void EdgeBundler::drawEdgeLines(EdgeBundleTree::Edge *edge) {
 }
 
 void EdgeBundler::renderLines() {
-    auto topEdgeMap = new std::unordered_map<int, EdgeBundleTree::Edge*>();
-    makeTopEdgesMap(topEdgeMap);
-    for (auto pair : *topEdgeMap) {
+    std::unordered_map<int, EdgeBundleTree::Edge*> topEdgeMap;
+    makeTopEdgesMap(&topEdgeMap);
+    for (auto pair : topEdgeMap) {
         EdgeBundleTree::Edge *bundle = pair.second;
         drawEdgeLines(bundle);
         drawLine(bundle->sPoint, bundle->tPoint, bundle->weight);
     }
-    delete topEdgeMap;
 }
 
 
@@ -242,14 +199,13 @@ void EdgeBundler::drawEdgeBeziers(const EdgeBundleTree::Edge *edge, const Point 
 }
 
 void EdgeBundler::renderBezier() {
-    auto topEdgeMap = new std::unordered_map<int, EdgeBundleTree::Edge*>();
-    makeTopEdgesMap(topEdgeMap);
-    for (auto pair : *topEdgeMap) {
+    std::unordered_map<int, EdgeBundleTree::Edge*> topEdgeMap;
+    makeTopEdgesMap(&topEdgeMap);
+    for (auto pair : topEdgeMap) {
         EdgeBundleTree::Edge *bundle = pair.second;
         const Point sPointCurve = lerp(*bundle->sPoint, *bundle->tPoint, curviness);
         const Point tPointCurve = lerp(*bundle->sPoint, *bundle->tPoint, 1 - curviness);
         drawEdgeBeziers(bundle, &sPointCurve, &tPointCurve);
         drawLine(&sPointCurve, &tPointCurve, bundle->weight);
     }
-    delete topEdgeMap;
 }

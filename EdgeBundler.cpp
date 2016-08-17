@@ -12,6 +12,7 @@ void EdgeBundler::readEdgesFromFile(const char *edgeFilename) {
     double right = 0, top = 0, left = 0, bottom = 0;
     FILE *fp;
     fp = fopen(edgeFilename, "r");
+    assert(fp != NULL);
     fscanf(fp, "%i", &numEdges);
     numNeighbors = numEdges < numNeighbors ? numEdges : numNeighbors;
     edges = (EdgeBundleTree::Edge*) malloc(sizeof(EdgeBundleTree::Edge) * numEdges);
@@ -109,7 +110,7 @@ void EdgeBundler::doMingle() {
     int iter = 1;
     do {
         inkWasSaved = false;
-        printf("Iter: %d\t", iter++);
+        printf("Iter: %d\n", iter++);
         for (unsigned long i = 0; i < tree->numEdges; ++i) {
             EdgeBundleTree::Edge& edge = tree->edges[i];
             if (!edge.bundle->grouped) {

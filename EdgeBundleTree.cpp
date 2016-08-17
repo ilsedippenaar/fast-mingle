@@ -20,12 +20,19 @@ EdgeBundleTree::Edge::Edge(Point *s, Point *t, Edge *bundle) {
 }
 
 EdgeBundleTree::Edge::Edge(Edge *child1, Edge *child2, const BundleReturn *data) {
-    assert(data->s.x <= data->t.x);
     Point *points = (Point*) malloc(sizeof(Point) * 4);
     points[0] = data->s;
     points[1] = data->t;
     points[2] = data->sCentroid;
     points[3] = data->tCentroid;
+    if (points[0].x > points[1].x) {
+        Point temp = points[0];
+        points[0] = points[1];
+        points[1] = temp;
+        temp = points[2];
+        points[2] = points[3];
+        points[3] = temp;
+    }
     sPoint = &points[0];
     tPoint = &points[1];
     sCentroid = &points[2];

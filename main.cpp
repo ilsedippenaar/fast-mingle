@@ -27,7 +27,9 @@ void drawBezier(const Point *start, const Point *ctrl1, const Point *ctrl2, cons
                                    {(ctrl1->x - bundler->center.x) / bundler->width * ZOOM_CONST, (ctrl1->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0},
                                    {(ctrl2->x - bundler->center.x) / bundler->width * ZOOM_CONST, (ctrl2->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0},
                                    {(end->x - bundler->center.x) / bundler->width * ZOOM_CONST, (end->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0}};
-    glColor3f(0.5f, 0.5f, 1.0f);
+    float alpha = weight / 5.0f;
+    if (alpha > 1.0) alpha = 1.0f;
+    glColor4f(0.5f, 0.5f, 1.0f, alpha);
     glMap1d(GL_MAP1_VERTEX_3, 0.0, 1.0, 3, 4, &controlPoints[0][0]);
     glEnable(GL_MAP1_VERTEX_3);
     glLineWidth(weight * 0.1f);

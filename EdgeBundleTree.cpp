@@ -20,7 +20,12 @@ EdgeBundleTree::Edge::Edge(Point *s, Point *t, Edge *bundle) {
 }
 
 EdgeBundleTree::Edge::Edge(Point *s, Point *t, Point *sCentroid, Point *tCentroid, Edge **children, double inkValue) {
-    assert(s->x < t->x);
+    if (s->x > t->x) {
+        Point *p = s;
+        s = t;
+        t = p;
+    }
+    assert(s->x <= t->x);
     sPoint = s;
     tPoint = t;
     this->sCentroid = sCentroid;

@@ -1,18 +1,22 @@
 #include "main.h"
 
-#define FILENAME // INSERT FILE NAME HERE
 #define WIDTH 1000
 #define HEIGHT 700
 
 using namespace std;
 
+char *edgeFilename;
 Point offset(0, 0);
 double width;
 double height;
 
 void drawLine(const Point *p1, const Point *p2, const int weight) {
-    glLineWidth(weight * 0.1f);
-    glColor3f(0.5f, 0.5f, 1.0f);
+    int w= (int)sqrt(weight) / 10;
+    if (w < 1) w = 1;
+    float alpha = weight / 1000.0f;
+    if (alpha > 1.0) alpha = 1.0f;
+    glLineWidth(w);
+    glColor4f(0.5f, 0.5f, 1.0f, alpha);
     glBegin(GL_LINES);
     glVertex2d((p1->x - offset.x) / width, (p1->y - offset.y) / height);
     glVertex2d((p2->x - offset.x) / width, (p2->y - offset.y) / height);
@@ -30,7 +34,8 @@ void testRender() {
 EdgeBundleTree::Edge* readEdgesFromFile(unsigned int *numRawEdges) {
     double right = 0, top = 0, left = 0, bottom = 0;
     FILE *fp;
-    fp = fopen(FILENAME, "r");
+    fp = fopen(edgeFilename, "r");
+    assert(fp != NULL);
     double points[4];
     fscanf(fp, "%i", numRawEdges);
     EdgeBundleTree::Edge *edges = (EdgeBundleTree::Edge*) malloc(*numRawEdges * sizeof(EdgeBundleTree::Edge));
@@ -76,12 +81,22 @@ void testBundlerRender() {
     bundler.doMingle();
     bundler.setDrawLineFunction(drawLine);
     glClear(GL_COLOR_BUFFER_BIT);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     bundler.render();
     glFlush();
 }
 
 int main(int argc, char *argv[]) {
     glutInit(&argc, argv);
+
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s path_edges.tsv\n", *argv);
+        return 1;
+    }
+    edgeFilename = argv[1];
+
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA);
     glutInitWindowSize(WIDTH, HEIGHT);
     glutCreateWindow("fast-mingle");

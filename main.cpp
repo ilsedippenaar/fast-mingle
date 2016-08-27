@@ -45,7 +45,7 @@ void drawBezier(const Point *start, const Point *ctrl1, const Point *ctrl2, cons
 }
 
 void init(char *pathIn) {
-    bundler = new EdgeBundler(pathIn, 20, 0.8f);
+    bundler = new EdgeBundler(pathIn, 50, 0.8f);
     printf("Created Edge Bundler\n");
     bundler->doMingle();
     printf("Finished mingling");

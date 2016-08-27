@@ -203,7 +203,13 @@ static void inline writeEnvelope(FILE *out, std::unordered_set<Point *> &points)
        if (p->x > xMax) { xMax = p->x; }
    }
 
-    fprintf(out, "BOX2D(%f %f, %f %f)", xMin, yMin, xMax, yMax);
+    double d = 0.0001;
+    xMin -= d;
+    yMin -= d;
+    xMax += d;
+    yMax += d;
+    fprintf(out, "((%f %f, %f %f, %f %f, %f %f, %f %f))",
+            xMin, yMin, xMin, yMax, xMax, yMax, xMax, yMin, xMin, yMin);
 }
 
 void EdgeBundler::writeBundle(FILE *out, EdgeBundleTree::Edge *bundle) {
@@ -238,13 +244,14 @@ void EdgeBundler::writeBundle(FILE *out, EdgeBundleTree::Edge *bundle) {
     }
 
     // Write size
-    fprintf(out, "\t%ld\t", S.size()+T.size());
+    fprintf(out, "\t%ld", S.size()+T.size());
 
-    // Write envelopes
+    // Write envelopes for endpoints as a multipolygon
+    fprintf(out, "\tMULTIPOLYGON(");
     writeEnvelope(out, S);
-    fprintf(out, "\t");
+    fprintf(out, ", ");
     writeEnvelope(out, T);
-    fprintf(out, "\n");
+    fprintf(out, ")\n");
 }
 
 void EdgeBundler::writeEdgeBeziers(FILE *out, std::vector<const EdgeBundleTree::Edge *> *segments, const EdgeBundleTree::Edge *edge, const Point *sPointTo, const Point *tPointTo) {

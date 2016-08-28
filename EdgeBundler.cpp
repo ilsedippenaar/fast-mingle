@@ -107,11 +107,14 @@ void EdgeBundler::assignNeighbors() {
 void EdgeBundler::doMingle() {
     bool inkWasSaved;
     EdgeBundleTree::BundleReturn bundleReturnArray[numNeighbors];
-    int iter = 1;
+    int level = 1;
     do {
         inkWasSaved = false;
-        printf("Iter: %d\n", iter++);
+        printf("Level: %d\n", level++);
         for (unsigned long i = 0; i < tree->numEdges; ++i) {
+            if (i % 5000 == 0) {
+                printf("\tOn iter %lu of %i\n", i, numEdges);
+            }
             EdgeBundleTree::Edge& edge = tree->edges[i];
             if (!edge.bundle->grouped) {
                 double maxInkSaved = -INFINITY;

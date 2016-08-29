@@ -8,9 +8,28 @@ const int WIDTH = 2000;
 const int HEIGHT = 1000;
 const double ZOOM_CONST = 1.9;
 
+Point pointToRender = {461.1111111111111, -288.8888888888889};
 
 bool shouldRender() {
     return getenv("SKIP_RENDER") == nullptr;
+}
+
+inline double normalizeX(double x) {
+    return (x - bundler->center.x) / bundler->width * ZOOM_CONST;
+}
+
+inline double normalizeY(double y) {
+    return (y - bundler->center.y) / bundler->height * ZOOM_CONST;
+}
+
+void drawPoint(const Point *p) {
+    glPointSize(10);
+    glColor3f(0, 0, 0);
+    glBegin(GL_POINTS);
+        glVertex2d(normalizeX(p->x), normalizeY(p->y));
+    glEnd();
+    printf("\nx: %lf\n", normalizeX(p->x));
+    printf("y: %lf\n", normalizeY(p->y));
 }
 
 void drawLine(const Point *p1, const Point *p2, const int weight) {
@@ -21,16 +40,16 @@ void drawLine(const Point *p1, const Point *p2, const int weight) {
     glLineWidth(w);
     glColor4f(0.5f, 0.5f, 1.0f, alpha);
     glBegin(GL_LINES);
-        glVertex2d((p1->x - bundler->center.x) / bundler->width * ZOOM_CONST, (p1->y - bundler->center.y) / bundler->height * ZOOM_CONST);
-        glVertex2d((p2->x - bundler->center.x) / bundler->width * ZOOM_CONST, (p2->y - bundler->center.y) / bundler->height * ZOOM_CONST);
+        glVertex2d(normalizeX(p1->x), normalizeY(p1->y));
+        glVertex2d(normalizeX(p2->x), normalizeY(p2->y));
     glEnd();
 }
 
 void drawBezier(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight) {
-    GLdouble controlPoints[4][3] = {{(start->x - bundler->center.x) / bundler->width * ZOOM_CONST, (start->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0},
-                                   {(ctrl1->x - bundler->center.x) / bundler->width * ZOOM_CONST, (ctrl1->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0},
-                                   {(ctrl2->x - bundler->center.x) / bundler->width * ZOOM_CONST, (ctrl2->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0},
-                                   {(end->x - bundler->center.x) / bundler->width * ZOOM_CONST, (end->y - bundler->center.y) / bundler->height * ZOOM_CONST, 0}};
+    GLdouble controlPoints[4][3] = {{normalizeX(start->x), normalizeY(start->y)},
+                                    {normalizeX(ctrl1->x), normalizeY(ctrl1->y)},
+                                    {normalizeX(ctrl2->x), normalizeY(ctrl2->y)},
+                                    {normalizeX(end->x), normalizeY(end->y)}};
     float alpha = weight / 5.0f;
     if (alpha > 1.0) alpha = 1.0f;
     glColor4f(0.5f, 0.5f, 1.0f, alpha);
@@ -50,6 +69,9 @@ void init(char *pathIn) {
     bundler->doMingle();
     printf("Finished mingling");
     if (shouldRender()) {
+        // uncomment this and choose point from data set to render
+//        bundler->setPointsToRender(&pointToRender, 1);
+        bundler->setDrawPointFunction(drawPoint);
         bundler->setDrawLineFunction(drawLine);
         bundler->setDrawBezierFunction(drawBezier);
     }

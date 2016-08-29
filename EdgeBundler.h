@@ -16,10 +16,12 @@ public:
 
     EdgeBundler(const char *edgeFilename, unsigned int numNeighbors=10, float curviness=0.5f);
     void doMingle();
+    void setDrawPointFunction(void (*drawPointFunction)(const Point *p));
     void setDrawLineFunction(void (*drawLineFunction)(const Point *, const Point *, const int));
     void setDrawBezierFunction(void (*drawBezierFunction)(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight));
     void renderLines();
     void renderBezier();
+    void setPointsToRender(const Point *points, const int numPoints);
     void write(char *path);
 
 private:
@@ -28,12 +30,16 @@ private:
     unsigned int numNeighbors;
     float curviness;
     EdgeBundleTree *tree;
+    std::unordered_map<Point, std::vector<EdgeBundleTree::Edge*>, PointHasher> pointToEdgesMap;
+    const Point *pointsToRender = nullptr;
+    int numPointsToRender = 0;
+    void (*drawPoint)(const Point *p);
     void (*drawLine)(const Point *, const Point *, const int);
     void (*drawBezier)(const Point *start, const Point *ctrl1, const Point *ctrl2, const Point *end, const int weight);
 
     void readEdgesFromFile(const char *edgeFilename);
     void assignNeighbors();
-    void makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge*> *map);
+    void makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge*> *map, bool isRendering);
     void drawEdgeLines(EdgeBundleTree::Edge *edge);
     void drawEdgeBeziers(const EdgeBundleTree::Edge *edge, const Point *sPointTo, const Point *tPointTo);
 

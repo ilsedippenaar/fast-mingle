@@ -58,6 +58,8 @@ void EdgeBundler::readEdgesFromFile(const char *edgeFilename) {
         Point *s = &newPoints[idx1];
         Point *t = &newPoints[idx2];
         edges[i] = EdgeBundleTree::Edge(s, t, &edges[i]);
+        pointToEdgesMap[p1].push_back(&edges[i]);
+        pointToEdgesMap[p2].push_back(&edges[i]);
     }
     fclose(fp);
     width = right - left;
@@ -103,7 +105,9 @@ void EdgeBundler::assignNeighbors() {
         edge.neighbors = &neighbors[i*numNeighbors];
     }
     tree = new EdgeBundleTree(edges, numEdges);
-    delete indices, dists, kdTree;
+    delete indices;
+    delete dists;
+    delete kdTree;
 }
 
 void EdgeBundler::doMingle() {
@@ -147,13 +151,25 @@ void EdgeBundler::doMingle() {
 
 
 
-void EdgeBundler::makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge *> *map) {
-    for (int i = 0; i < numEdges; ++i) {
-        (*map)[edges[i].bundle->id] = edges[i].bundle;
+void EdgeBundler::makeTopEdgesMap(std::unordered_map<int, EdgeBundleTree::Edge*> *map, bool isRendering) {
+    if (pointsToRender == nullptr || !isRendering) {
+        for (int i = 0; i < numEdges; ++i) {
+            (*map)[edges[i].bundle->id] = edges[i].bundle;
+        }
+    } else {
+        for (int i = 0; i < numPointsToRender; ++i) {
+            drawPoint(&pointsToRender[i]);
+            for (EdgeBundleTree::Edge *edge_ptr : pointToEdgesMap[pointsToRender[i]]) {
+                (*map)[edge_ptr->bundle->id] = edge_ptr->bundle;
+            }
+        }
     }
 }
 
 
+void EdgeBundler::setDrawPointFunction(void (*drawPointFunction)(const Point *)) {
+    drawPoint = drawPointFunction;
+}
 
 void EdgeBundler::setDrawLineFunction(void (*drawLineFunction)(const Point *, const Point *, const int)) {
     drawLine = drawLineFunction;
@@ -170,7 +186,7 @@ void EdgeBundler::drawEdgeLines(EdgeBundleTree::Edge *edge) {
 
 void EdgeBundler::renderLines() {
     std::unordered_map<int, EdgeBundleTree::Edge*> topEdgeMap;
-    makeTopEdgesMap(&topEdgeMap);
+    makeTopEdgesMap(&topEdgeMap, true);
     for (auto pair : topEdgeMap) {
         EdgeBundleTree::Edge *bundle = pair.second;
         drawEdgeLines(bundle);
@@ -188,7 +204,7 @@ void EdgeBundler::write(char *path) {
     }
 
     std::unordered_map<int, EdgeBundleTree::Edge*> topEdgeMap;
-    makeTopEdgesMap(&topEdgeMap);
+    makeTopEdgesMap(&topEdgeMap, false);
     for (auto pair : topEdgeMap) {
         writeBundle(out, pair.second);
     }
@@ -352,7 +368,7 @@ void EdgeBundler::drawEdgeBeziers(const EdgeBundleTree::Edge *edge, const Point 
 
 void EdgeBundler::renderBezier() {
     std::unordered_map<int, EdgeBundleTree::Edge*> topEdgeMap;
-    makeTopEdgesMap(&topEdgeMap);
+    makeTopEdgesMap(&topEdgeMap, true);
     for (auto pair : topEdgeMap) {
         EdgeBundleTree::Edge *bundle = pair.second;
         const Point sPointCurve = lerp(*bundle->sPoint, *bundle->tPoint, curviness);
@@ -360,4 +376,9 @@ void EdgeBundler::renderBezier() {
         drawEdgeBeziers(bundle, &sPointCurve, &tPointCurve);
         drawLine(&sPointCurve, &tPointCurve, bundle->weight);
     }
+}
+
+void EdgeBundler::setPointsToRender(const Point *points, int numPoints) {
+    pointsToRender = points;
+    numPointsToRender = numPoints;
 }

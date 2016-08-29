@@ -137,7 +137,7 @@ void EdgeBundleTree::setBundle(EdgeBundleTree::Edge& edge, EdgeBundleTree::Edge 
 }
 
 void EdgeBundleTree::coalesceTree() {
-    // TODO: make a top edges set so that testing bundles can be faster (i.e., loop through top bundles, not inidivudal edges)
+    // TODO: make a top edges set so that testing bundles can be faster (i.e., loop through top bundles, not individual edges)
     for (int i = 0; i < numEdges; ++i) {
         Edge& edge = edges[i];
         edge.grouped = false;

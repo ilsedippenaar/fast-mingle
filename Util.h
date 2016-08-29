@@ -31,7 +31,6 @@ struct PointHasher {
 
 
 Point lerp(const Point &a, const Point &b, const double delta);
-double costFunction(std::vector<Point>& S, std::vector<Point>& T, Point& sPoint, Point& tPoint);
 
 
 #endif //MINGLEC_POINT_H

@@ -36,13 +36,11 @@ public:
 
     EdgeBundleTree(Edge *edges, unsigned int numEdges);
 
-    static double getInkValueFromPoints(Edge& edge0, Edge& edge1, Point& sPoint, Point& tPoint);
     static void testBundle(EdgeBundleTree::BundleReturn *bundleReturn, const Edge &bundle1, const Edge &bundle2);
     static void applyBundle(const BundleReturn& bundleReturn, Edge& edge1, Edge& edge2);
     void coalesceTree();
 
 private:
-    double goldenSectionSearch(Edge& node0, Edge& node1);
     static void setBundle(Edge& edge, Edge *bundle);
 };
 

@@ -8,8 +8,6 @@
 #include <OpenGL/gl.h>
 #include <GLUT/glut.h>
 
-#include "libpng-1.6.23/include/png.h"
-
 #include "EdgeBundler.h"
 #include "EdgeBundleTree.h"
 #include "Util.h"
